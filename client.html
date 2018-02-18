@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<canvas onclick="draw()"></canvas>
+<button onclick="sendCanvasPcture()">send canvas</button>
+<input type="file">
+<button onclick="onSubmit()">send</button>
+<script>
+    function draw() {
+        var canvas = document.querySelector('canvas');
+        if (canvas.getContext) {
+            var ctx = canvas.getContext('2d');
+
+            ctx.fillRect(25,25,100,100);
+            ctx.clearRect(45,45,60,60);
+            ctx.strokeRect(50,50,50,50);
+        }
+    }
+</script>
+<script>
+  function sendFile(file) {
+      const payload = {
+          media_file: file
+      }
+      const data = new FormData();
+      data.append('media_file', payload["media_file"])
+      data.append('a', 1)
+      fetch('http://localhost:8080/server', {
+          method: "POST",
+          body: data,
+      })
+          .then((res) => {
+              return res.text()
+          })
+          .then((text) => {
+              console.log('text', text);
+          })
+  }
+  function onSubmit(e) {
+      const inputFile = document.querySelector('input[type="file"]');
+      const files = inputFile.files;
+      console.log(files);
+      sendFile(files[0])
+  }
+
+  function b64toBlob(b64Data, contentType, sliceSize) {
+      contentType = contentType || '';
+      sliceSize = sliceSize || 512;
+
+      var byteCharacters = atob(b64Data);
+      var byteArrays = [];
+
+      for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+          var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+          var byteNumbers = new Array(slice.length);
+          for (var i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+          }
+
+          var byteArray = new Uint8Array(byteNumbers);
+
+          byteArrays.push(byteArray);
+      }
+
+      var blob = new Blob(byteArrays, {type: contentType});
+      return blob;
+  }
+
+  function sendCanvasPcture() {
+      var canvas = document.querySelector('canvas');
+      var ImageURL = canvas.toDataURL('image/png');
+      console.log(ImageURL);
+      var block = ImageURL.split(";");
+      var contentType = block[0].split(":")[1];// In this case "image/gif"
+      var realData = block[1].split(",")[1];// In this case "R0lGODlhPQBEAPeoAJosM...."
+
+      var blob = b64toBlob(realData, contentType);
+
+      sendFile(blob)
+  }
+</script>
+</body>
+</html>
